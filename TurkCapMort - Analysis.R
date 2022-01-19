@@ -1,43 +1,21 @@
 #Load Packages
 lapply(c("dplyr", "RMark", "plyr", "janitor", "chron", "ggplot2"), require, character.only = T)
 
-#Set working directory
-setwd("E:/Maine Drive/Analysis/Capture Mortality") #at home
-
 #############################################################################################
-##### RMARK #####
-# EWT.EH.cov2 <- read.csv(file = "CapMortEncounterHistory_withcovariates.csv") %>%
-EWT.EH.cov2 <- read.csv(file = "CapMortEncounterHistory_withcovariatesBC.csv") %>% #Slightly reduced sample size to include body condition (loss of 6 birds)
+### A Priori Models
+EWT.EH.cov <- read.csv(file = "CapMortEncounterHistory_withcovariatesBC.csv") %>%
   mutate(Study.Area = as.factor(Study.Area),
          Location = as.factor(Location),
          Sex = as.factor(Sex),
+         SexTT = as.factor(SexTT),
          TurkAge = as.factor(TurkAge),
          Trans.Type = as.factor(Trans.Type),
          Hematoma = as.factor(Hematoma),
          Pat.Tag = as.factor(Pat.Tag),
-         Year = as.factor(Year)) %>%
-  dplyr::rename(BodyCon = BodyCondition) %>%
-  dplyr::mutate(Weight = as.numeric(scale(Weight, center = T, scale = T)),
-         HandTime = as.numeric(scale(HandTime, center = T, scale = T)),
-         mtCDy = as.numeric(scale(mtCDy, center = T, scale = T)),
-         avgmtWk = as.numeric(scale(avgmtWk, center = T, scale = T)),
-         pcpCDy = as.numeric(scale(pcpCDy, center = T, scale = T)),
-         avgpcpWk = as.numeric(scale(avgpcpWk, center = T, scale = T)),
-         BodyCon = as.numeric(scale(BodyCon, center = T, scale = T)),
-         YearDay = as.numeric(scale(YearDay, center = T, scale = T))) %>%
-  ### Want to better imputate missing values for LPDV, etc.
-  mutate(MG = ifelse(MG == max(MG) | MG == min(MG), MG, NA),
-         LPDV = ifelse(LPDV == max(LPDV) | LPDV == min(LPDV), LPDV, NA),
-         REV = ifelse(REV == max(REV) | REV == min(REV), REV, NA)) %>%
-  mutate(MG = as.numeric(scale(MG, center = T, scale = T)),
-         LPDV = as.numeric(scale(LPDV, center = T, scale = T)),
-         REV = as.numeric(scale(REV, center = T, scale = T))) %>%
-  mutate(MG = ifelse(is.na(MG), 0, MG),
-         LPDV = ifelse(is.na(LPDV), 0, LPDV),
-         REV = ifelse(is.na(REV), 0, REV))
+         Year = as.factor(Year))
 
-capmort.process = process.data(EWT.EH.cov2,model="Nest",nocc=30,
-                               groups=c("Study.Area", "Location", "Sex", "TurkAge", "Trans.Type", "Hematoma", "Pat.Tag", "Year"))
+capmort.process = process.data(EWT.EH.cov,model="Nest",nocc=30,
+                               groups=c("Study.Area", "Location", "Sex", "TurkAge", "Trans.Type", "SexTT", "Hematoma", "Pat.Tag", "Year"))
 capmort.ddl = make.design.data(capmort.process)
 
 ###Log-transform of date effect###
@@ -62,6 +40,7 @@ EWT.capmort.models=function()
   S.turkage = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ TurkAge * LN, link="loglog")))
   S.sex = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Sex * LN, link="loglog")))
   S.transtype = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Trans.Type * LN, link="loglog")))
+  S.TTSex = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ SexTT * LN, link="loglog")))
   S.studyarea = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Study.Area * LN, link="loglog")))
   S.Location = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Location * LN, link="loglog"))) #This will likely be explained better by weather covariates
   S.LPDV = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ LPDV * LN, link="loglog")))
@@ -72,9 +51,6 @@ EWT.capmort.models=function()
   S.HandlingTime = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ HandTime * LN, link="loglog")))
   S.BodyCondition = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ BodyCon * LN, link="loglog")))
   S.OrdDay = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ YearDay * LN, link="loglog")))
-  S.Year = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Year * LN, link="loglog")))
-  S.YearDayInt = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ YearDay * Year * LN, link="loglog")))
-  S.YearTTInt = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Trans.Type * Year * LN, link="loglog")))
   
   #Weather Models
   S.mt.CapDate = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ mtCDy * LN, link="loglog")))
@@ -90,18 +66,9 @@ EWT.capmort.results
 
 write.csv(EWT.capmort.results$model.table, file = "EWT.capmort.results.csv", row.names=FALSE)
 
-EWT.EH.cov2 %>%
-  dplyr::select(Year, HandTime, Trans.Type, TurkAge, REV, Sex) %>%
-  group_by(Year) %>%
-  dplyr::summarise(HT.Mean = mean(HandTime),
-                   HT.SD = sd(HandTime))
-
-
-
-
 #Save Individual Model Outputs
 #Export summaries as single file
-sink("E:/Maine Drive/Analysis/Capture Mortality/CapMort_model_estimates.csv") #At Home
+sink("CapMort_APrioriModels_BetaEst.csv") #At Home
 cat("exp(-exp(-x))")
 cat('\n')
 cat("For interpretting the beta use reverse of loglog")
@@ -113,43 +80,104 @@ cat('\n')
 cat("Handling Time")
 cat('\n')
 write.csv(EWT.capmort.results$S.HandlingTime$results$beta)
-cat('\n')
-write.csv(EWT.capmort.results$S.HandlingTime$results$real)
 cat('______________________________________')
 cat('\n')
 cat('\n')
 cat("Transmitter Type")
 cat('\n')
 write.csv(EWT.capmort.results$S.transtype$results$beta)
-cat('\n')
-write.csv(EWT.capmort.results$S.transtype$results$real)
 cat('______________________________________')
 cat('\n')
 cat('\n')
 cat("Turkey Age")
 cat('\n')
 write.csv(EWT.capmort.results$S.turkage$results$beta)
-cat('\n')
-write.csv(EWT.capmort.results$S.turkage$results$real)
 cat('______________________________________')
 cat('\n')
 cat('\n')
-cat("Capture Date Temp")
+cat("REV")
 cat('\n')
-write.csv(EWT.capmort.results$S.mt.CapDate$results$beta)
-cat('\n')
-write.csv(EWT.capmort.results$S.mt.CapDate$results$real)
+write.csv(EWT.capmort.results$S.REV$results$beta)
 cat('______________________________________')
 cat('\n')
 cat('\n')
-cat("Average Temp Week Post Capture")
+cat("Sex")
 cat('\n')
-write.csv(EWT.capmort.results$S.avgmt.Week$results$beta)
-cat('\n')
-write.csv(EWT.capmort.results$S.avgmt.Week$results$real)
+write.csv(EWT.capmort.results$S.Sex$results$beta)
 cat('______________________________________')
 cat('\n')
 cat('\n')
+sink()
+
+#####################################################################################################################################
+### Ad Hoc Models
+
+## YEAR
+S.Year = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Year * LN, link="loglog")))
+S.Year$results$beta
+
+## TRANSMITTER TYPE
+EWT.EH.cov.TT <- EWT.EH.cov %>% filter(Sex == "F")
+
+capmort.process.TT = process.data(EWT.EH.cov.TT,model="Nest",nocc=30,
+                               groups=c("Study.Area", "Location", "Sex", "TurkAge", "Trans.Type", "Hematoma", "Pat.Tag", "Year"))
+capmort.ddl.TT = make.design.data(capmort.process.TT)
+
+###Log-transform of date effect###
+## First create 'group covariate' for log-transformation of time
+Daypost<- data.frame(seq(1,30,1))
+colnames(Daypost)<- c("time")
+Daypost$LN<-log(Daypost$time)
+
+## Add LN date data to design data
+capmort.ddl.TT$S=merge_design.covariates(capmort.ddl.TT$S,Daypost,bygroup=FALSE, bytime=TRUE)
+
+S.TT.solo = mark(capmort.process.TT, capmort.ddl.TT, model.parameters=list(S=list(formula =~ Trans.Type * LN, link="loglog")))
+S.TT.solo$results$beta
+
+## SEX
+EWT.EH.cov.Sex <- EWT.EH.cov %>% filter(Trans.Type == "Neck")
+
+capmort.process.Sex = process.data(EWT.EH.cov.Sex,model="Nest",nocc=30,
+                                  groups=c("Study.Area", "Location", "Sex", "TurkAge", "Trans.Type", "Hematoma", "Pat.Tag", "Year"))
+capmort.ddl.Sex = make.design.data(capmort.process.Sex)
+
+###Log-transform of date effect###
+## First create 'group covariate' for log-transformation of time
+Daypost<- data.frame(seq(1,30,1))
+colnames(Daypost)<- c("time")
+Daypost$LN<-log(Daypost$time)
+
+## Add LN date data to design data
+capmort.ddl.Sex$S=merge_design.covariates(capmort.ddl.Sex$S,Daypost,bygroup=FALSE, bytime=TRUE)
+
+S.Sex.solo = mark(capmort.process.Sex, capmort.ddl.Sex, model.parameters=list(S=list(formula =~ Sex * LN, link="loglog")))
+S.Sex.solo$results$beta
+
+sink("CapMort_AdHocModels_CoefEst.csv") #At Home
+cat("exp(-exp(-x))")
+cat('\n')
+cat("For interpretting the beta use reverse of loglog")
+cat('\n')
+cat('\n')
+cat("Model Estimates")
+cat('\n')
+cat('\n')
+cat("Year")
+cat('\n')
+write.csv(S.Year$results$beta)
+cat('______________________________________')
+cat('\n')
+cat('\n')
+cat("Transmitter Type")
+cat('\n')
+write.csv(S.TT.solo$results$beta)
+cat('______________________________________')
+cat('\n')
+cat('\n')
+cat("Turkey Age")
+cat('\n')
+write.csv(S.Sex.solo$results$beta)
 sink()
 
 #####################################################################################################################################
@@ -187,34 +215,34 @@ capmort29.ddl=add.design.data(capmort.process, capmort.ddl, parameter="S", type=
 
 EWT.capmort.threshold.models=function()
 {
-  S.Days1A = mark(capmort.process, capmort2.ddl, model.parameters=list(S=list(formula =~ Days1 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days2A = mark(capmort.process, capmort3.ddl, model.parameters=list(S=list(formula =~ Days2 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days3A = mark(capmort.process, capmort4.ddl, model.parameters=list(S=list(formula =~ Days3 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days4A = mark(capmort.process, capmort5.ddl, model.parameters=list(S=list(formula =~ Days4 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days5A = mark(capmort.process, capmort6.ddl, model.parameters=list(S=list(formula =~ Days5 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days6A = mark(capmort.process, capmort7.ddl, model.parameters=list(S=list(formula =~ Days6 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days7A = mark(capmort.process, capmort8.ddl, model.parameters=list(S=list(formula =~ Days7 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days8A = mark(capmort.process, capmort9.ddl, model.parameters=list(S=list(formula =~ Days8 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days9A = mark(capmort.process, capmort10.ddl, model.parameters=list(S=list(formula =~ Days9 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days10A = mark(capmort.process, capmort11.ddl, model.parameters=list(S=list(formula =~ Days10 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days11A = mark(capmort.process, capmort12.ddl, model.parameters=list(S=list(formula =~ Days11 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days12A = mark(capmort.process, capmort13.ddl, model.parameters=list(S=list(formula =~ Days12 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days13A = mark(capmort.process, capmort14.ddl, model.parameters=list(S=list(formula =~ Days13 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days14A = mark(capmort.process, capmort15.ddl, model.parameters=list(S=list(formula =~ Days14 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days15A = mark(capmort.process, capmort16.ddl, model.parameters=list(S=list(formula =~ Days15 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days16A = mark(capmort.process, capmort17.ddl, model.parameters=list(S=list(formula =~ Days16 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days17A = mark(capmort.process, capmort18.ddl, model.parameters=list(S=list(formula =~ Days17 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days18A = mark(capmort.process, capmort19.ddl, model.parameters=list(S=list(formula =~ Days18 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days19A = mark(capmort.process, capmort20.ddl, model.parameters=list(S=list(formula =~ Days19 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days20A = mark(capmort.process, capmort21.ddl, model.parameters=list(S=list(formula =~ Days20 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days21A = mark(capmort.process, capmort22.ddl, model.parameters=list(S=list(formula =~ Days21 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days22A = mark(capmort.process, capmort23.ddl, model.parameters=list(S=list(formula =~ Days22 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days23A = mark(capmort.process, capmort24.ddl, model.parameters=list(S=list(formula =~ Days23 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days24A = mark(capmort.process, capmort25.ddl, model.parameters=list(S=list(formula =~ Days24 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days25A = mark(capmort.process, capmort26.ddl, model.parameters=list(S=list(formula =~ Days25 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days26A = mark(capmort.process, capmort27.ddl, model.parameters=list(S=list(formula =~ Days26 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days27A = mark(capmort.process, capmort28.ddl, model.parameters=list(S=list(formula =~ Days27 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
-  S.Days28A = mark(capmort.process, capmort29.ddl, model.parameters=list(S=list(formula =~ Days28 + Year + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days1A = mark(capmort.process, capmort2.ddl, model.parameters=list(S=list(formula =~ Days1 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days2A = mark(capmort.process, capmort3.ddl, model.parameters=list(S=list(formula =~ Days2 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days3A = mark(capmort.process, capmort4.ddl, model.parameters=list(S=list(formula =~ Days3 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days4A = mark(capmort.process, capmort5.ddl, model.parameters=list(S=list(formula =~ Days4 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days5A = mark(capmort.process, capmort6.ddl, model.parameters=list(S=list(formula =~ Days5 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days6A = mark(capmort.process, capmort7.ddl, model.parameters=list(S=list(formula =~ Days6 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days7A = mark(capmort.process, capmort8.ddl, model.parameters=list(S=list(formula =~ Days7 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days8A = mark(capmort.process, capmort9.ddl, model.parameters=list(S=list(formula =~ Days8 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days9A = mark(capmort.process, capmort10.ddl, model.parameters=list(S=list(formula =~ Days9 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days10A = mark(capmort.process, capmort11.ddl, model.parameters=list(S=list(formula =~ Days10 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days11A = mark(capmort.process, capmort12.ddl, model.parameters=list(S=list(formula =~ Days11 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days12A = mark(capmort.process, capmort13.ddl, model.parameters=list(S=list(formula =~ Days12 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days13A = mark(capmort.process, capmort14.ddl, model.parameters=list(S=list(formula =~ Days13 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days14A = mark(capmort.process, capmort15.ddl, model.parameters=list(S=list(formula =~ Days14 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days15A = mark(capmort.process, capmort16.ddl, model.parameters=list(S=list(formula =~ Days15 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days16A = mark(capmort.process, capmort17.ddl, model.parameters=list(S=list(formula =~ Days16 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days17A = mark(capmort.process, capmort18.ddl, model.parameters=list(S=list(formula =~ Days17 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days18A = mark(capmort.process, capmort19.ddl, model.parameters=list(S=list(formula =~ Days18 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days19A = mark(capmort.process, capmort20.ddl, model.parameters=list(S=list(formula =~ Days19 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days20A = mark(capmort.process, capmort21.ddl, model.parameters=list(S=list(formula =~ Days20 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days21A = mark(capmort.process, capmort22.ddl, model.parameters=list(S=list(formula =~ Days21 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days22A = mark(capmort.process, capmort23.ddl, model.parameters=list(S=list(formula =~ Days22 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days23A = mark(capmort.process, capmort24.ddl, model.parameters=list(S=list(formula =~ Days23 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days24A = mark(capmort.process, capmort25.ddl, model.parameters=list(S=list(formula =~ Days24 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days25A = mark(capmort.process, capmort26.ddl, model.parameters=list(S=list(formula =~ Days25 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days26A = mark(capmort.process, capmort27.ddl, model.parameters=list(S=list(formula =~ Days26 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days27A = mark(capmort.process, capmort28.ddl, model.parameters=list(S=list(formula =~ Days27 + Trans.Type + TurkAge + HandTime, link="loglog")))
+  S.Days28A = mark(capmort.process, capmort29.ddl, model.parameters=list(S=list(formula =~ Days28 + Trans.Type + TurkAge + HandTime, link="loglog")))
   
   return(collect.models() )
 }

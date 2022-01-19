@@ -363,5 +363,36 @@ year.cov <- trap.raw %>%
 
 EWT.EH.cov4 <- merge(EWT.EH.cov3, year.cov, by = "Bird.ID")
 
-write.csv(EWT.EH.cov4, file = "CapMortEncounterHistory_withcovariatesBC.csv", row.names=FALSE)
+EWT.EH.covFinal <- EWT.EH.cov4 %>% #Slightly reduced sample size to include body condition (loss of 6 birds)
+  mutate(Study.Area = as.factor(Study.Area),
+         Location = as.factor(Location),
+         Sex = as.factor(Sex),
+         TurkAge = as.factor(TurkAge),
+         Trans.Type = as.factor(Trans.Type),
+         Hematoma = as.factor(Hematoma),
+         Pat.Tag = as.factor(Pat.Tag),
+         Year = as.factor(Year)) %>%
+  dplyr::rename(BodyCon = BodyCondition) %>%
+  dplyr::mutate(Weight = as.numeric(scale(Weight, center = T, scale = T)),
+                HandTime = as.numeric(scale(HandTime, center = T, scale = T)),
+                mtCDy = as.numeric(scale(mtCDy, center = T, scale = T)),
+                avgmtWk = as.numeric(scale(avgmtWk, center = T, scale = T)),
+                pcpCDy = as.numeric(scale(pcpCDy, center = T, scale = T)),
+                avgpcpWk = as.numeric(scale(avgpcpWk, center = T, scale = T)),
+                BodyCon = as.numeric(scale(BodyCon, center = T, scale = T)),
+                YearDay = as.numeric(scale(YearDay, center = T, scale = T))) %>%
+  ### Want to better imputate missing values for LPDV, etc.
+  mutate(MG = ifelse(MG == max(MG) | MG == min(MG), MG, NA),
+         LPDV = ifelse(LPDV == max(LPDV) | LPDV == min(LPDV), LPDV, NA),
+         REV = ifelse(REV == max(REV) | REV == min(REV), REV, NA)) %>%
+  mutate(MG = as.numeric(scale(MG, center = T, scale = T)),
+         LPDV = as.numeric(scale(LPDV, center = T, scale = T)),
+         REV = as.numeric(scale(REV, center = T, scale = T))) %>%
+  mutate(MG = ifelse(is.na(MG), 0, MG),
+         LPDV = ifelse(is.na(LPDV), 0, LPDV),
+         REV = ifelse(is.na(REV), 0, REV)) %>%
+  mutate(SexTT = as.factor(ifelse(Sex == "F" & Trans.Type == "Back", "F.B",
+                                  ifelse(Sex == "F" & Trans.Type == "Neck", "F.N",
+                                         ifelse(Sex == "M" & Trans.Type == "Neck", "M.N", "M.B")))))
 
+write.csv(EWT.EH.covFinal, file = "CapMortEncounterHistory_withcovariatesBC.csv", row.names=FALSE)

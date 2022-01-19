@@ -1,29 +1,29 @@
 "S","model","npar","AICc","DeltaAICc","weight","Deviance"
-"~Days4 + Year + Trans.Type + TurkAge + HandTime","S(~Days4 + Year + Trans.Type + TurkAge + HandTime)",7,336.375550129911,0,0.227433710703163,322.35802
-"~Days3 + Year + Trans.Type + TurkAge + HandTime","S(~Days3 + Year + Trans.Type + TurkAge + HandTime)",7,336.540300129911,0.16474999999997,0.209449741751152,322.52277
-"~Days2 + Year + Trans.Type + TurkAge + HandTime","S(~Days2 + Year + Trans.Type + TurkAge + HandTime)",7,337.825530129911,1.44997999999998,0.110152835425076,323.808
-"~Days6 + Year + Trans.Type + TurkAge + HandTime","S(~Days6 + Year + Trans.Type + TurkAge + HandTime)",7,337.942880129911,1.56732999999997,0.103875577674477,323.92535
-"~Days5 + Year + Trans.Type + TurkAge + HandTime","S(~Days5 + Year + Trans.Type + TurkAge + HandTime)",7,338.355070129911,1.97951999999998,0.0845293502597591,324.33754
-"~Days7 + Year + Trans.Type + TurkAge + HandTime","S(~Days7 + Year + Trans.Type + TurkAge + HandTime)",7,338.389180129911,2.01362999999998,0.0830999262525397,324.37165
-"~Days8 + Year + Trans.Type + TurkAge + HandTime","S(~Days8 + Year + Trans.Type + TurkAge + HandTime)",7,339.945440129911,3.56988999999999,0.0381648072350322,325.92791
-"~Days9 + Year + Trans.Type + TurkAge + HandTime","S(~Days9 + Year + Trans.Type + TurkAge + HandTime)",7,339.988890129911,3.61333999999999,0.0373446183583665,325.97136
-"~Days10 + Year + Trans.Type + TurkAge + HandTime","S(~Days10 + Year + Trans.Type + TurkAge + HandTime)",7,340.094230129911,3.71868000000001,0.0354285791270921,326.0767
-"~Days11 + Year + Trans.Type + TurkAge + HandTime","S(~Days11 + Year + Trans.Type + TurkAge + HandTime)",7,341.148540129911,4.77298999999999,0.0209128502474417,327.13101
-"~Days12 + Year + Trans.Type + TurkAge + HandTime","S(~Days12 + Year + Trans.Type + TurkAge + HandTime)",7,341.989850129911,5.61430000000001,0.0137317245225179,327.97232
-"~Days13 + Year + Trans.Type + TurkAge + HandTime","S(~Days13 + Year + Trans.Type + TurkAge + HandTime)",7,342.834050129911,6.45850000000002,0.00900345879809004,328.81652
-"~Days14 + Year + Trans.Type + TurkAge + HandTime","S(~Days14 + Year + Trans.Type + TurkAge + HandTime)",7,343.249270129911,6.87371999999999,0.00731552508906621,329.23174
-"~Days15 + Year + Trans.Type + TurkAge + HandTime","S(~Days15 + Year + Trans.Type + TurkAge + HandTime)",7,344.307310129911,7.93176,0.00431017632696075,330.28978
-"~Days16 + Year + Trans.Type + TurkAge + HandTime","S(~Days16 + Year + Trans.Type + TurkAge + HandTime)",7,345.890370129911,9.51481999999999,0.00195316046997828,331.87284
-"~Days20 + Year + Trans.Type + TurkAge + HandTime","S(~Days20 + Year + Trans.Type + TurkAge + HandTime)",7,346.530220129911,10.15467,0.00141839196993373,332.51269
-"~Days21 + Year + Trans.Type + TurkAge + HandTime","S(~Days21 + Year + Trans.Type + TurkAge + HandTime)",7,346.554210129911,10.17866,0.00140147999062448,332.53668
-"~Days25 + Year + Trans.Type + TurkAge + HandTime","S(~Days25 + Year + Trans.Type + TurkAge + HandTime)",7,346.653780129911,10.27823,0.00133341565848119,332.63625
-"~Days19 + Year + Trans.Type + TurkAge + HandTime","S(~Days19 + Year + Trans.Type + TurkAge + HandTime)",7,346.679250129911,10.3037,0.00131654227935544,332.66172
-"~Days22 + Year + Trans.Type + TurkAge + HandTime","S(~Days22 + Year + Trans.Type + TurkAge + HandTime)",7,346.812950129911,10.4374,0.00123140871946547,332.79542
-"~Days18 + Year + Trans.Type + TurkAge + HandTime","S(~Days18 + Year + Trans.Type + TurkAge + HandTime)",7,346.966740129911,10.59119,0.00114026856090902,332.94921
-"~Days1 + Year + Trans.Type + TurkAge + HandTime","S(~Days1 + Year + Trans.Type + TurkAge + HandTime)",7,347.258810129911,10.88326,0.000985337373197199,333.24128
-"~Days17 + Year + Trans.Type + TurkAge + HandTime","S(~Days17 + Year + Trans.Type + TurkAge + HandTime)",7,347.265810129911,10.89026,0.000981894720547517,333.24828
-"~Days23 + Year + Trans.Type + TurkAge + HandTime","S(~Days23 + Year + Trans.Type + TurkAge + HandTime)",7,347.280380129911,10.90483,0.00097476760953056,333.26285
-"~Days24 + Year + Trans.Type + TurkAge + HandTime","S(~Days24 + Year + Trans.Type + TurkAge + HandTime)",7,347.885300129911,11.50975,0.000720351360296724,333.86777
-"~Days27 + Year + Trans.Type + TurkAge + HandTime","S(~Days27 + Year + Trans.Type + TurkAge + HandTime)",7,347.958080129911,11.58253,0.000694608997266794,333.94055
-"~Days26 + Year + Trans.Type + TurkAge + HandTime","S(~Days26 + Year + Trans.Type + TurkAge + HandTime)",7,348.050770129911,11.67522,0.000663151912824711,334.03324
-"~Days28 + Year + Trans.Type + TurkAge + HandTime","S(~Days28 + Year + Trans.Type + TurkAge + HandTime)",7,348.906360129911,12.53081,0.00043233860685527,334.88883
+"~Days4 + Trans.Type + TurkAge + HandTime","S(~Days4 + Trans.Type + TurkAge + HandTime)",5,350.051548202159,0,0.230723759869737,340.04216
+"~Days3 + Trans.Type + TurkAge + HandTime","S(~Days3 + Trans.Type + TurkAge + HandTime)",5,350.209298202159,0.157749999999965,0.213224617049105,340.19991
+"~Days2 + Trans.Type + TurkAge + HandTime","S(~Days2 + Trans.Type + TurkAge + HandTime)",5,351.498598202159,1.44704999999999,0.11191013131295,341.48921
+"~Days6 + Trans.Type + TurkAge + HandTime","S(~Days6 + Trans.Type + TurkAge + HandTime)",5,351.633038202159,1.58148999999997,0.104634795597461,341.62365
+"~Days5 + Trans.Type + TurkAge + HandTime","S(~Days5 + Trans.Type + TurkAge + HandTime)",5,352.068458202159,2.01691,0.0841639052172608,342.05907
+"~Days7 + Trans.Type + TurkAge + HandTime","S(~Days7 + Trans.Type + TurkAge + HandTime)",5,352.094848202159,2.04329999999999,0.0830606571738673,342.08546
+"~Days8 + Trans.Type + TurkAge + HandTime","S(~Days8 + Trans.Type + TurkAge + HandTime)",5,353.692248202159,3.64069999999998,0.0373701086239782,343.68286
+"~Days9 + Trans.Type + TurkAge + HandTime","S(~Days9 + Trans.Type + TurkAge + HandTime)",5,353.737988202159,3.68643999999995,0.03652515313403,343.7286
+"~Days10 + Trans.Type + TurkAge + HandTime","S(~Days10 + Trans.Type + TurkAge + HandTime)",5,353.861618202159,3.81007,0.0343357178883735,343.85223
+"~Days11 + Trans.Type + TurkAge + HandTime","S(~Days11 + Trans.Type + TurkAge + HandTime)",5,354.959728202159,4.90817999999996,0.0198287152098677,344.95034
+"~Days12 + Trans.Type + TurkAge + HandTime","S(~Days12 + Trans.Type + TurkAge + HandTime)",5,355.833318202159,5.78176999999999,0.0128114096169418,345.82393
+"~Days13 + Trans.Type + TurkAge + HandTime","S(~Days13 + Trans.Type + TurkAge + HandTime)",5,356.715048202159,6.6635,0.00824388035718819,346.70566
+"~Days14 + Trans.Type + TurkAge + HandTime","S(~Days14 + Trans.Type + TurkAge + HandTime)",5,357.154198202159,7.10264999999998,0.00661868129668332,347.14481
+"~Days15 + Trans.Type + TurkAge + HandTime","S(~Days15 + Trans.Type + TurkAge + HandTime)",5,358.257178202159,8.20562999999999,0.00381296137196535,348.24779
+"~Days16 + Trans.Type + TurkAge + HandTime","S(~Days16 + Trans.Type + TurkAge + HandTime)",5,359.893208202159,9.84165999999999,0.00168268570385656,349.88382
+"~Days20 + Trans.Type + TurkAge + HandTime","S(~Days20 + Trans.Type + TurkAge + HandTime)",5,360.576478202159,10.52493,0.00119572913031606,350.56709
+"~Days21 + Trans.Type + TurkAge + HandTime","S(~Days21 + Trans.Type + TurkAge + HandTime)",5,360.605628202159,10.55408,0.00117842776819533,350.59624
+"~Days19 + Trans.Type + TurkAge + HandTime","S(~Days19 + Trans.Type + TurkAge + HandTime)",5,360.731838202159,10.68029,0.00110636088816879,350.72245
+"~Days25 + Trans.Type + TurkAge + HandTime","S(~Days25 + Trans.Type + TurkAge + HandTime)",5,360.770838202159,10.71929,0.00108499583709818,350.76145
+"~Days22 + Trans.Type + TurkAge + HandTime","S(~Days22 + Trans.Type + TurkAge + HandTime)",5,360.881348202159,10.8298,0.00102667061101652,350.87196
+"~Days18 + Trans.Type + TurkAge + HandTime","S(~Days18 + Trans.Type + TurkAge + HandTime)",5,361.015428202159,10.96388,0.000960099024047106,351.00604
+"~Days1 + Trans.Type + TurkAge + HandTime","S(~Days1 + Trans.Type + TurkAge + HandTime)",5,361.217538202159,11.16599,0.000867817491403032,351.20815
+"~Days17 + Trans.Type + TurkAge + HandTime","S(~Days17 + Trans.Type + TurkAge + HandTime)",5,361.316918202159,11.26537,0.000825749475583229,351.30753
+"~Days23 + Trans.Type + TurkAge + HandTime","S(~Days23 + Trans.Type + TurkAge + HandTime)",5,361.372708202159,11.32116,0.000803033498040088,351.36332
+"~Days24 + Trans.Type + TurkAge + HandTime","S(~Days24 + Trans.Type + TurkAge + HandTime)",5,362.004338202159,11.95279,0.000585567480511271,351.99495
+"~Days27 + Trans.Type + TurkAge + HandTime","S(~Days27 + Trans.Type + TurkAge + HandTime)",5,362.121378202159,12.06983,0.000552283460124234,352.11199
+"~Days26 + Trans.Type + TurkAge + HandTime","S(~Days26 + Trans.Type + TurkAge + HandTime)",5,362.206058202159,12.15451,0.00052938789773582,352.19667
+"~Days28 + Trans.Type + TurkAge + HandTime","S(~Days28 + Trans.Type + TurkAge + HandTime)",5,363.111128202159,13.05958,0.00033669801449414,353.10174
