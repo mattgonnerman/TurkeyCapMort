@@ -103,11 +103,39 @@ cat('\n')
 cat('\n')
 cat("Sex")
 cat('\n')
-write.csv(EWT.capmort.results$S.Sex$results$beta)
+write.csv(EWT.capmort.results$S.sex$results$beta)
 cat('______________________________________')
 cat('\n')
 cat('\n')
 sink()
+
+#Cumulative survival rates
+tt.real <- EWT.capmort.results$S.transtype$results$real
+#Backpacks
+prod(tt.real$estimate[1:10])
+prod(tt.real$lcl[1:10])
+prod(tt.real$ucl[1:10])
+
+prod(tt.real$estimate[1:14])
+prod(tt.real$lcl[1:14])
+prod(tt.real$ucl[1:14])
+
+prod(tt.real$estimate[1:29])
+prod(tt.real$lcl[1:29])
+prod(tt.real$ucl[1:29])
+
+#Necklaces
+prod(tt.real$estimate[30:39])
+prod(tt.real$lcl[30:39])
+prod(tt.real$ucl[30:39])
+
+prod(tt.real$estimate[30:43])
+prod(tt.real$lcl[30:43])
+prod(tt.real$ucl[30:43])
+
+prod(tt.real$estimate[30:58])
+prod(tt.real$lcl[30:58])
+prod(tt.real$ucl[30:58])
 
 #####################################################################################################################################
 ### Ad Hoc Models

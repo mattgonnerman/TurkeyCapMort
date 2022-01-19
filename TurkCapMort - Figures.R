@@ -5,81 +5,6 @@ lapply(c("dplyr", "RMark", "plyr", "janitor", "chron", "ggplot2", "patchwork"), 
 source("TurkCapMort - Analysis.R")
 
 #######################################################################################################################
-### PLOT FOR TOP MODEL = YEAR
-year.survivals <- EWT.capmort.results$S.Year$results$real
-year.survivals$DaysPostCap <- rep(1:29)
-year.survivals$Year <- c(rep("2018", 29), rep("2019", 29), rep("2020", 29))
-year.survivals$Year <- as.factor(year.survivals$Year)
-
-year.est <- year.survivals %>%
-  dplyr::select(Year, DaysPostCap, DailyS = estimate, DailyLCL = lcl, DailyUCL = ucl) %>%
-  `rownames<-`( NULL ) %>%
-  group_by(Year) %>%
-  mutate(CumulS = cumprod(DailyS))
-
-year.est.18 <- year.survivals %>%
-  filter(Year == "2018") %>%
-  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
-         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
-         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
-year.est.19 <- year.survivals %>%
-  filter(Year == "2019") %>%
-  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
-         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
-         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
-year.est.20 <- year.survivals %>%
-  filter(Year == "2020") %>%
-  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
-         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
-         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
-year.est <- rbind(year.est.18, year.est.19, year.est.20)
-
-year.plot.daily <- ggplot(data = year.est, aes(x = DaysPostCap, y=estimate, group = Year)) +
-  geom_ribbon(aes(ymin = lcl, ymax = ucl, fill = Year), alpha = .3) +
-  geom_line(aes(linetype = Year, color = Year), size = 1.3) +
-  labs(x = "Days Post Capture", y = "Daily Survival")+
-  theme_classic(base_size = 18) +
-  theme(legend.key.width=unit(3,"line")) +
-  theme(axis.title.x = element_text(margin = margin(t = 12, r = 0, b = 0, l = 0))) +
-  theme(axis.title.y = element_text(margin = margin(t = 0, r = 12, b = 0, l = 0))) +
-  scale_color_manual(name = "Year",
-                     values = c("#FB5904", "#04A6FB", "#5904FB")) +
-  scale_fill_manual(name = "Year",
-                    values = c("#FB5904", "#04A6FB", "#5904FB")) +
-  scale_linetype_manual(name = "Year",
-                        values = c("solid", "dashed", "longdash")) +
-  theme(legend.position = "none")
-
-year.plot.cum <- ggplot(data = year.est, aes(x = DaysPostCap, y=CumProd, group = Year)) +
-  geom_ribbon(aes(ymin = CumProdLCL, ymax = CumProdUCL, fill = Year), alpha = .3) +
-  geom_line(aes(linetype = Year, color = Year), size = 1.3) +
-  labs(x = "Days Post Capture", y = "Cumulative Survival")+
-  theme_classic(base_size = 18) +
-  theme(legend.key.width=unit(3,"line")) +
-  theme(axis.title.x = element_text(margin = margin(t = 12, r = 0, b = 0, l = 0))) +
-  theme(axis.title.y = element_text(margin = margin(t = 0, r = 12, b = 0, l = 0))) +
-  scale_color_manual(name = "Year",
-                     values = c("#FB5904", "#04A6FB", "#5904FB")) +
-  scale_fill_manual(name = "Year",
-                    values = c("#FB5904", "#04A6FB", "#5904FB")) +
-  scale_linetype_manual(name = "Year",
-                        values = c("solid", "dashed", "longdash")) +
-  theme(legend.position = "none")
-
-year.legend <- ggpubr::get_legend(year.plot.cum, position = "bottom")
-
-gridlay <- "
-AB
-CC
-"
-year.fig <- year.plot.daily + year.plot.cum + year.legend +
-  plot_layout(design = gridlay, heights = c(1, .2)) +
-  plot_annotation(tag_levels = list(c("A", "B", "")))
-
-ggsave(year.fig, filename = "./Figures/Figure - Year Daily and Cumulative Survival.jpeg",
-       width = 15.5, height = 8, dpi = 600)
-
-#######################################################################################################################
 ### PLOT FOR Transmitter * Sex Graph
 TTSex.survivals <- EWT.capmort.results$S.TTSex$results$real
 TTSex.survivals$DaysPostCap <- rep(1:29)
@@ -361,9 +286,9 @@ DEF
 GHI
 "
 
-combo.fig <- transtype.plot.daily + transtype.plot.cum + transtype.legend +
+combo.fig <- handtime.plot.daily + handtime.plot.cum + handtime.legend + 
+  transtype.plot.daily + transtype.plot.cum + transtype.legend +
   turkage.plot.daily + turkage.plot.cum + turkage.legend +
-  handtime.plot.daily + handtime.plot.cum + handtime.legend +
   plot_layout(design = gridlay, widths = c(1, 1, .2, 1, 1, .2, 1, 1, .2)) +
   plot_annotation(tag_levels = list(c("A", "B", "", "C", "D", "", "E", "F", "")))
 
@@ -371,7 +296,6 @@ ggsave(combo.fig, filename = "./Figures/Figure - Daily and Cumulative Survival.j
        width = 17.5, height = 15, dpi = 600)
 
 ##############################################################################################
-### SUB NULL MODELS
 #REV
 REV.m <- mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ REV * LN,
                                                                          link="loglog")))
@@ -448,6 +372,157 @@ REV.fig <- REV.plot.daily + REV.plot.cum + REV.legend +
   plot_annotation(tag_levels = list(c("A", "B", "")))
 
 ggsave(REV.fig, filename = "Figure - REV Daily and Cumulative Survival.jpeg",
+       width = 15.5, height = 8, dpi = 600)
+
+###Sex
+year.survivals <- EWT.capmort.results$S.sex$results$real
+year.survivals$DaysPostCap <- rep(1:29)
+year.survivals$Year <- c(rep("2018", 29), rep("2019", 29), rep("2020", 29))
+year.survivals$Year <- as.factor(year.survivals$Year)
+
+REV.survivals <- REV$estimates %>%
+  dplyr::select(REV = covdata, DaysPostCap = model.index, estimate, lcl, ucl) %>%
+  distinct() %>%
+  mutate(REV = factor(REV, levels = c(min(EWT.EH.cov2$REV),max(EWT.EH.cov2$REV)),
+                      labels = c("Negative", "Positive")))
+
+REV.est <- REV.survivals %>%
+  dplyr::select(REV, DaysPostCap, DailyS = estimate, DailyLCL = lcl, DailyUCL = ucl) %>%
+  `rownames<-`( NULL ) %>%
+  group_by(REV) %>%
+  mutate(CumulS = cumprod(DailyS))
+
+REV.est.neg <- REV.survivals %>%
+  filter(REV == "Negative") %>%
+  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
+         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
+         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
+REV.est.pos <- REV.survivals %>%
+  filter(REV == "Positive") %>%
+  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
+         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
+         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
+REV.est <- rbind(REV.est.neg, REV.est.pos)
+
+REV.plot.daily <- ggplot(data = REV.est, aes(x = DaysPostCap, y=estimate, group = REV)) +
+  geom_ribbon(aes(ymin = lcl, ymax = ucl, fill = REV), alpha = .3) +
+  geom_line(aes(linetype = REV, color = REV), size = 1.3) +
+  labs(x = "Days Post Capture", y = "Daily Survival")+
+  theme_classic(base_size = 18) +
+  theme(legend.key.width=unit(3,"line")) +
+  theme(axis.title.x = element_text(margin = margin(t = 12, r = 0, b = 0, l = 0))) +
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 12, b = 0, l = 0))) +
+  scale_color_manual(name = "REV",
+                     values = c("#FB5904", "#04A6FB")) +
+  scale_fill_manual(name = "REV",
+                    values = c("#FB5904", "#04A6FB")) +
+  scale_linetype_manual(name = "REV",
+                        values = c("solid", "dashed")) +
+  theme(legend.position = "none")
+
+REV.plot.cum <- ggplot(data = REV.est, aes(x = DaysPostCap, y=CumProd, group = REV)) +
+  geom_ribbon(aes(ymin = CumProdLCL, ymax = CumProdUCL, fill = REV), alpha = .3) +
+  geom_line(aes(linetype = REV, color = REV), size = 1.3) +
+  labs(x = "Days Post Capture", y = "Cumulative Survival")+
+  theme_classic(base_size = 18) +
+  theme(legend.key.width=unit(3,"line")) +
+  theme(axis.title.x = element_text(margin = margin(t = 12, r = 0, b = 0, l = 0))) +
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 12, b = 0, l = 0))) +
+  scale_color_manual(name = "REV",
+                     values = c("#FB5904", "#04A6FB")) +
+  scale_fill_manual(name = "REV",
+                    values = c("#FB5904", "#04A6FB")) +
+  scale_linetype_manual(name = "REV",
+                        values = c("solid", "dashed")) +
+  theme(legend.position = "none")
+
+REV.legend <- ggpubr::get_legend(REV.plot.cum, position = "bottom")
+
+require(patchwork)
+gridlay <- "
+AB
+CC
+"
+REV.fig <- REV.plot.daily + REV.plot.cum + REV.legend +
+  plot_layout(design = gridlay, heights = c(1, .2)) +
+  plot_annotation(tag_levels = list(c("A", "B", "")))
+
+ggsave(REV.fig, filename = "Figure - REV Daily and Cumulative Survival.jpeg",
+       width = 15.5, height = 8, dpi = 600)
+
+#######################################################################################################################
+### Ad Hoc Year
+year.survivals <- S.Year$results$real
+year.survivals$DaysPostCap <- rep(1:29)
+year.survivals$Year <- c(rep("2018", 29), rep("2019", 29), rep("2020", 29))
+year.survivals$Year <- as.factor(year.survivals$Year)
+
+year.est <- year.survivals %>%
+  dplyr::select(Year, DaysPostCap, DailyS = estimate, DailyLCL = lcl, DailyUCL = ucl) %>%
+  `rownames<-`( NULL ) %>%
+  group_by(Year) %>%
+  mutate(CumulS = cumprod(DailyS))
+
+year.est.18 <- year.survivals %>%
+  filter(Year == "2018") %>%
+  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
+         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
+         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
+year.est.19 <- year.survivals %>%
+  filter(Year == "2019") %>%
+  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
+         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
+         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
+year.est.20 <- year.survivals %>%
+  filter(Year == "2020") %>%
+  mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
+         CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
+         CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
+year.est <- rbind(year.est.18, year.est.19, year.est.20)
+
+year.plot.daily <- ggplot(data = year.est, aes(x = DaysPostCap, y=estimate, group = Year)) +
+  geom_ribbon(aes(ymin = lcl, ymax = ucl, fill = Year), alpha = .3) +
+  geom_line(aes(linetype = Year, color = Year), size = 1.3) +
+  labs(x = "Days Post Capture", y = "Daily Survival")+
+  theme_classic(base_size = 18) +
+  theme(legend.key.width=unit(3,"line")) +
+  theme(axis.title.x = element_text(margin = margin(t = 12, r = 0, b = 0, l = 0))) +
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 12, b = 0, l = 0))) +
+  scale_color_manual(name = "Year",
+                     values = c("#FB5904", "#04A6FB", "#5904FB")) +
+  scale_fill_manual(name = "Year",
+                    values = c("#FB5904", "#04A6FB", "#5904FB")) +
+  scale_linetype_manual(name = "Year",
+                        values = c("solid", "dashed", "longdash")) +
+  theme(legend.position = "none")
+
+year.plot.cum <- ggplot(data = year.est, aes(x = DaysPostCap, y=CumProd, group = Year)) +
+  geom_ribbon(aes(ymin = CumProdLCL, ymax = CumProdUCL, fill = Year), alpha = .3) +
+  geom_line(aes(linetype = Year, color = Year), size = 1.3) +
+  labs(x = "Days Post Capture", y = "Cumulative Survival")+
+  theme_classic(base_size = 18) +
+  theme(legend.key.width=unit(3,"line")) +
+  theme(axis.title.x = element_text(margin = margin(t = 12, r = 0, b = 0, l = 0))) +
+  theme(axis.title.y = element_text(margin = margin(t = 0, r = 12, b = 0, l = 0))) +
+  scale_color_manual(name = "Year",
+                     values = c("#FB5904", "#04A6FB", "#5904FB")) +
+  scale_fill_manual(name = "Year",
+                    values = c("#FB5904", "#04A6FB", "#5904FB")) +
+  scale_linetype_manual(name = "Year",
+                        values = c("solid", "dashed", "longdash")) +
+  theme(legend.position = "none")
+
+year.legend <- ggpubr::get_legend(year.plot.cum, position = "bottom")
+
+gridlay <- "
+AB
+CC
+"
+year.fig <- year.plot.daily + year.plot.cum + year.legend +
+  plot_layout(design = gridlay, heights = c(1, .2)) +
+  plot_annotation(tag_levels = list(c("A", "B", "")))
+
+ggsave(year.fig, filename = "./Figures/Figure - Year Daily and Cumulative Survival.jpeg",
        width = 15.5, height = 8, dpi = 600)
 
 #####################################################################################################################################
