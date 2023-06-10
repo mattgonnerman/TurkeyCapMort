@@ -3,7 +3,7 @@ lapply(c("dplyr", "RMark", "plyr", "janitor", "chron", "ggplot2"), require, char
 
 #############################################################################################
 ### A Priori Models
-EWT.EH.cov <- read.csv(file = "CapMortEncounterHistory_withcovariatesBC.csv") %>%
+tcm.data <- read.csv(file = "TurkCapMort_EH.csv") %>%
   mutate(Study.Area = as.factor(Study.Area),
          Location = as.factor(Location),
          Sex = as.factor(Sex),

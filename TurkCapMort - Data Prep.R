@@ -1,14 +1,9 @@
 #Load Packages
 lapply(c("dplyr", "RMark", "plyr", "janitor", "chron", "ggplot2"), require, character.only = T)
 
-#Set working directory
-setwd("E:/Maine Drive/Analysis/Capture Mortality") #at home
-
-
 ########################################
 #### Creating DSR Encounter History ####
 ########################################
-
 telem.raw <- read.csv("Telemetry_Data - Telemetry.csv")
 trap.raw <- read.csv("Trapping - Data.csv")
 pathogen.raw <- read.csv("Pathogen_Status.csv")
@@ -396,3 +391,77 @@ EWT.EH.covFinal <- EWT.EH.cov4 %>% #Slightly reduced sample size to include body
                                          ifelse(Sex == "M" & Trans.Type == "Neck", "M.N", "M.B")))))
 
 write.csv(EWT.EH.covFinal, file = "CapMortEncounterHistory_withcovariatesBC.csv", row.names=FALSE)
+
+
+######################################################
+### ADDITIONAL COVARIATES - REWRITE FOLLOWING LOSS ###
+######################################################
+
+og.data <- read.csv("TurkCapMort_EH.csv")
+
+### Precipitation and Temperature at the nearest site
+require(rnoaa)
+require(lubridate)
+options(noaakey = "tEJZffukUjubhCZapAulcVngXiYjeyPD")
+
+#Load study site locations and get xy and dates for each capture
+cap.info <- read.csv("Trapping - Data.csv") %>%
+  filter(!is.na(Trans.Type) & Trans.Type != "") %>%
+  select(id = AlumBand, Location, Date)
+
+site.info <- read.csv("CaptureSites.csv") %>%
+  select(Location = Location.Name, latitude = Latitude, longitude = Longitude) %>%
+  merge(., cap.info, by = "Location", all = T) %>%
+  filter(!is.na(id))
+
+#Find the nearest weather station
+site.date <- site.info %>% select(Date, latitude, longitude) %>% distinct() %>% dplyr::mutate(id = row_number())%>%
+  mutate(Date = as.Date(Date, format = "%m/%d/%Y")) %>%
+  mutate(Date2 = Date - 6)
+
+#Precipitation
+stations.prcp <- ghcnd_stations() %>% filter(first_year < 2018, last_year > 2020) %>%
+  filter(element %in% c("PRCP"))
+
+prcp.fun <- function(x){
+  hold1 = as.data.frame(meteo_nearby_stations(lat_lon_df = data.frame(id = x[4], latitude = x[2], longitude = x[3]), limit = 10,
+                        var = "prcp", year_min = year(x[5]), year_max = year(x[1]),
+                        station_data = stations.prcp)[[1]])%>%
+    select(id) %>% mutate(Datemin = x[5], Datemax = x[1])
+  
+  hold2 = apply(hold1, 1, function(df){meteo_pull_monitors(monitors = df[1], date_min = df[2], date_max = df[3])})
+  
+  hold3 = hold2[as.numeric(which(as.numeric(sapply(hold2, nrow, simplify = T)) != 0))]
+  
+  df = as.data.frame(hold3[min(as.numeric(which(sapply(hold3, function(df) !anyNA(df$prcp)))))])
+  
+  data.frame(id = x[4], Date = x[1], Prcp = df$prcp[7], Prcp_Week = mean(df$prcp))
+
+  }
+
+prcp.data <- apply(site.date, 1, prcp.fun)
+
+#Temperature
+stations.temp <- ghcnd_stations() %>% filter(first_year < 2018, last_year > 2020) %>%
+  filter(element %in% c("TAVG"))
+
+temp.fun <- function(x){
+  hold1 = as.data.frame(meteo_nearby_stations(lat_lon_df = data.frame(id = x[4], latitude = x[2], longitude = x[3]), limit = 10,
+                                              var = "tavg", year_min = year(x[5]), year_max = year(x[1]),
+                                              station_data = stations.temp)[[1]])%>%
+    select(id) %>% mutate(Datemin = x[5], Datemax = x[1])
+  
+  hold2 = apply(hold1, 1, function(df){meteo_pull_monitors(monitors = df[1], date_min = df[2], date_max = df[3])})
+  
+  hold3 = hold2[as.numeric(which(as.numeric(sapply(hold2, nrow, simplify = T)) != 0))]
+  
+  df = as.data.frame(hold3[min(as.numeric(which(sapply(hold3, function(df) !anyNA(df$temp)))))])
+  
+  data.frame(id = x[4], Date = x[1], Temp = df$tavg[7], Temp_Week = mean(df$tavg))
+  
+}
+
+temp.list <- apply(site.date, 1, temp.fun)
+
+temp.data <- temp.list %>%
+  select(Temp, Temp_Week)
