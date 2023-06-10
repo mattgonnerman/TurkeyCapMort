@@ -175,16 +175,17 @@ options(noaakey = "tEJZffukUjubhCZapAulcVngXiYjeyPD")
 #Load study site locations and get xy and dates for each capture
 cap.info <- trap.raw %>%
   filter(!is.na(Trans.Type) & Trans.Type != "") %>%
-  select(id = AlumBand, Location, Date)
+  select(Bird.ID = AlumBand, Location, Date)
 
 site.info <- read.csv("CaptureSites.csv") %>%
   select(Location = Location.Name, latitude = Latitude, longitude = Longitude) %>%
   merge(., cap.info, by = "Location", all = T) %>%
-  filter(!is.na(id))
+  mutate(Date = as.Date(Date, format = "%m/%d/%Y")) %>%
+  filter(!is.na(Bird.ID))
 
 #Find the nearest weather station
-site.date <- site.info %>% select(Date, latitude, longitude) %>% distinct() %>% dplyr::mutate(site.id = row_number())%>%
-  mutate(Date = as.Date(Date, format = "%m/%d/%Y")) %>%
+site.date <- site.info %>% select(Date, latitude, longitude) %>% distinct() %>% 
+  dplyr::mutate(site.id = row_number()) %>%
   mutate(Date2 = Date + 6) %>%
   select(site.id, latitude, longitude, Date.min = Date, Date.max = Date2)
 
@@ -206,7 +207,7 @@ prcp.fun <- function(df, station = stations.prcp){
   met.subset = met.pull %>% filter(id == stat.pull)
   #If none of the nearest checked have full data, rerun
   if(is.na(mean(met.subset$prcp))){
-    prcp.funP(df, station = station %>% filter(!id %in% met.stat.df$id))
+    prcp.fun(df, station = station %>% filter(!id %in% met.stat.df$id))
   }else{
     
   dist = met.stat.df %>% filter(id == stat.pull)
@@ -218,8 +219,9 @@ prcp.fun <- function(df, station = stations.prcp){
              Prcp.Week = mean(met.subset$prcp))
   }
 }
-prcp.list <- apply(site.date[1:3,], 1, prcp.fun)
-prcp.df <- do.call("rbind", prcp.list)
+prcp.list <- apply(site.date, 1, prcp.fun)
+prcp.df <- do.call("rbind", prcp.list) %>%
+  select(Prcp.Day, Prcp.Week)
 
 #Temperature measured in tenths of degree Celcius
 stations.tavg <- ghcnd_stations() %>% filter(first_year < 2018, last_year > 2020) %>%
@@ -239,7 +241,7 @@ tavg.fun <- function(df, station = stations.tavg){
   met.subset = met.pull %>% filter(id == stat.pull)
   #If none of the nearest checked have full data, rerun
   if(is.na(mean(met.subset$tavg))){
-    tavg.funP(df, station = station %>% filter(!id %in% met.stat.df$id))
+    tavg.fun(df, station = station %>% filter(!id %in% met.stat.df$id))
   }else{
     
     dist = met.stat.df %>% filter(id == stat.pull)
@@ -251,8 +253,42 @@ tavg.fun <- function(df, station = stations.tavg){
                tavg.Week = mean(met.subset$tavg))
   }
 }
-tavg.list <- apply(site.date[1:3,], 1, tavg.fun)
-tavg.df <- do.call("rbind", tavg.list)
+tavg.list <- apply(site.date, 1, tavg.fun)
+tavg.df <- do.call("rbind", tavg.list) %>%
+  select(Tavg.Day = tavg.Day, Tavg.Week = tavg.Week)
+
+weather.cov <- as.data.frame(cbind(site.date, prcp.df, tavg.df)) %>%
+  dplyr::rename(Date = Date.min) %>%
+  merge(., site.info, by = c("latitude", "longitude", "Date")) %>%
+  select(Bird.ID, Prcp.Day, Prcp.Week, Tavg.Day, Tavg.Week)
+  
+EWT.EH.cov2 <- merge(EWT.EH.cov1, weather.cov, by = "Bird.ID", all.x = T)
+
+
+### Group Versus Solo Release
+require(chron)
+
+group.cov1 <- trap.raw %>% filter(!is.na(TransFreq)) %>% 
+  select(Bird.ID = AlumBand, Location, Date, Release.Time) %>%
+  mutate(DateTime = as.POSIXct(paste(Date, Release.Time, sep = " "),
+                               format = "%m/%d/%Y %H:%M"),
+         Censor = ifelse(is.na(Release.Time) | Release.Time == "", 1, 0))
+group.cov <- group.cov1 %>%
+  group_by(Location, DateTime) %>%
+  dplyr::summarize(Total = n()) %>%
+  mutate(Group = ifelse(Total > 1, 1, 0)) %>%
+  merge(test, ., by = c("Location", "DateTime")) %>%
+  mutate(Group = ifelse(Censor == 1, NA, Group)) %>%
+  select(Bird.ID, Group)
+
+EWT.EH.cov3 <- merge(EWT.EH.cov2, group.cov, by = "Bird.ID", all.x = T)
+
+
+### Blood Collection Method
+
+
+
+
 
 
 ################################################################################################
@@ -261,7 +297,7 @@ require(lubridate)
 
 bodycondition.raw <- trap.raw %>% 
   filter(Recapture != "Y") %>%
-  dplyr::select(BirdID = AlumBand, BodyMass = Weight..lbs., Tarsus, CapDate = Date, Age) %>%
+  dplyr::select(Bird.ID = AlumBand, BodyMass = Weight..lbs., Tarsus, CapDate = Date, Age) %>%
   mutate(CapDate = as.Date(CapDate, format = "%m/%d/%Y")) %>%
   mutate(CapDate_J = yday(CapDate)) %>%
   mutate(CapDate_J = ifelse(CapDate_J > 200, (CapDate_J - 365), CapDate_J)) %>%
@@ -270,12 +306,12 @@ bodycondition.raw <- trap.raw %>%
   filter(!is.na(BodyMass)) %>%
   filter(!is.na(Tarsus)) %>%
   mutate(CapYear = year(CapDate)) %>%
-  filter(!is.na(BirdID))
+  filter(!is.na(Bird.ID))
 
 bodycondition.lm <- lm(BodyMass ~ Tarsus + CapDate + Age, data = bodycondition.raw)
 bodycondition.raw$BC_Score <- resid(bodycondition.lm)
 
-bodycondition.cov <- bodycondition.raw %>% dplyr::select(Bird.ID = BirdID, BodyCondition = BC_Score)
+bodycondition.cov <- bodycondition.raw %>% dplyr::select(Bird.ID, BodyCondition = BC_Score)
 
 EWT.EH.cov3 <- merge(EWT.EH.cov2, bodycondition.cov, by = "Bird.ID")
 
