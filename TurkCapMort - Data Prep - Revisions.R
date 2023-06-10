@@ -285,10 +285,18 @@ EWT.EH.cov3 <- merge(EWT.EH.cov2, group.cov, by = "Bird.ID", all.x = T)
 
 
 ### Blood Collection Method
-
-
-
-
+bld.smpl <- read.csv("CaptMort_SampType.csv") %>%
+  dplyr::rename(Bird.ID = ID) %>% mutate(Fill = 1) %>%
+  tidyr::pivot_wider(names_from = "SampType", values_from = "Fill") %>%
+  merge(., EWT.EH.cov2 %>% select(Bird.ID), by = "Bird.ID", all.y = T) %>%
+  select(Bird.ID, MG = MG_result, QB, BC) %>%
+  mutate(SampType = ifelse(QB == 1, 1, NA)) %>%
+  mutate(SampType = ifelse(is.na(SampType) & is.na(MG) & BC == 1, 2, SampType)) %>%
+  mutate(SampType = ifelse(is.na(SampType) & !is.na(MG) & BC == 1, 3, SampType)) %>%
+  mutate(SampType = ifelse(is.na(SampType), 0, SampType)) %>%
+  select(Bird.ID, SampType)
+  
+EWT.EH.cov3 <- merge(EWT.EH.cov2, bld.smpl, by = "Bird.ID", all.x = T)
 
 
 ################################################################################################
@@ -313,7 +321,7 @@ bodycondition.raw$BC_Score <- resid(bodycondition.lm)
 
 bodycondition.cov <- bodycondition.raw %>% dplyr::select(Bird.ID, BodyCondition = BC_Score)
 
-EWT.EH.cov3 <- merge(EWT.EH.cov2, bodycondition.cov, by = "Bird.ID")
+EWT.EH.cov4 <- merge(EWT.EH.cov3, bodycondition.cov, by = "Bird.ID")
 
 ### ADDING ADDITIONAL INFO ON YEAR
 year.cov <- trap.raw %>%
@@ -323,38 +331,12 @@ year.cov <- trap.raw %>%
   mutate(Year = year(Date)) %>%
   dplyr::select(-Date)
 
-EWT.EH.cov4 <- merge(EWT.EH.cov3, year.cov, by = "Bird.ID")
+EWT.EH.cov5 <- merge(EWT.EH.cov4, year.cov, by = "Bird.ID")
 
-EWT.EH.covFinal <- EWT.EH.cov4 %>% #Slightly reduced sample size to include body condition (loss of 6 birds)
-  mutate(Study.Area = as.factor(Study.Area),
-         Location = as.factor(Location),
-         Sex = as.factor(Sex),
-         TurkAge = as.factor(TurkAge),
-         Trans.Type = as.factor(Trans.Type),
-         Hematoma = as.factor(Hematoma),
-         Pat.Tag = as.factor(Pat.Tag),
-         Year = as.factor(Year)) %>%
+EWT.EH.covFinal <- EWT.EH.cov5 %>% #Slightly reduced sample size to include body condition (loss of 6 birds)
   dplyr::rename(BodyCon = BodyCondition) %>%
-  dplyr::mutate(Weight = as.numeric(scale(Weight, center = T, scale = T)),
-                HandTime = as.numeric(scale(HandTime, center = T, scale = T)),
-                mtCDy = as.numeric(scale(mtCDy, center = T, scale = T)),
-                avgmtWk = as.numeric(scale(avgmtWk, center = T, scale = T)),
-                pcpCDy = as.numeric(scale(pcpCDy, center = T, scale = T)),
-                avgpcpWk = as.numeric(scale(avgpcpWk, center = T, scale = T)),
-                BodyCon = as.numeric(scale(BodyCon, center = T, scale = T)),
-                YearDay = as.numeric(scale(YearDay, center = T, scale = T))) %>%
-  ### Want to better imputate missing values for LPDV, etc.
-  mutate(MG = ifelse(MG == max(MG) | MG == min(MG), MG, NA),
-         LPDV = ifelse(LPDV == max(LPDV) | LPDV == min(LPDV), LPDV, NA),
-         REV = ifelse(REV == max(REV) | REV == min(REV), REV, NA)) %>%
-  mutate(MG = as.numeric(scale(MG, center = T, scale = T)),
-         LPDV = as.numeric(scale(LPDV, center = T, scale = T)),
-         REV = as.numeric(scale(REV, center = T, scale = T))) %>%
-  mutate(MG = ifelse(is.na(MG), 0, MG),
-         LPDV = ifelse(is.na(LPDV), 0, LPDV),
-         REV = ifelse(is.na(REV), 0, REV)) %>%
   mutate(SexTT = as.factor(ifelse(Sex == "F" & Trans.Type == "Back", "F.B",
                                   ifelse(Sex == "F" & Trans.Type == "Neck", "F.N",
                                          ifelse(Sex == "M" & Trans.Type == "Neck", "M.N", "M.B")))))
 
-write.csv(EWT.EH.covFinal, file = "CapMortEncounterHistory_withcovariatesBC.csv", row.names=FALSE)
+write.csv(EWT.EH.covFinal, file = "TurkCapMort_EH.csv", row.names=FALSE)
