@@ -8,15 +8,18 @@ return(hold[,1])}
 #############################################################################################
 ### A Priori Models
 tcm.data.raw <- read.csv(file = "TurkCapMort_EH.csv") %>%
+  mutate_at(c('Study.Area'), .funs = function(x){ gsub(" ", "", x)}) %>%
   mutate_at(c('Study.Area', 'Location', 'Sex', 'SexTT', 'TurkAge', 'Trans.Type',
               'Hematoma', 'Year', 'SampType', 'MG', 'LPDV', 'REV', 'Group'), as.factor) %>%
   select(-Location, -SexTT, -Pat.Tag, -Weight) %>%
   mutate_at(c('YearDay', 'HandTime', 'Prcp.Day', 'Prcp.Week',
               'Tavg.Day', 'Tavg.Week', 'BodyCon'), scale.fix)
+  
 
 ### Prepare for RMark
-capmort.process = process.data(EWT.EH.cov,model="Nest",nocc=30,
-                               groups=c("Study.Area", "Location", "Sex", "TurkAge", "Trans.Type", "SexTT", "Hematoma", "Pat.Tag", "Year"))
+capmort.process = process.data(tcm.data.raw,model="Nest",nocc=30,
+                               groups=c('Study.Area', 'Sex', 'TurkAge', 'Trans.Type',
+                                        'Hematoma', 'Year', 'SampType', 'MG', 'LPDV', 'REV', 'Group'))
 capmort.ddl = make.design.data(capmort.process)
 
 ###Log-transform of date effect###
@@ -31,47 +34,23 @@ capmort.ddl$S=merge_design.covariates(capmort.ddl$S,Daypost,bygroup=FALSE, bytim
 #Generate List of Models to run
 cov.names <- colnames(tcm.data.raw[,7:ncol(tcm.data.raw)])
 uni.mods <- paste0(cov.names, " * LN")
-allcomb.mods <- combn(uni.mods, 3, FUN = paste, collapse = ' + ')
-models.df <- data.frame(Model = allcomb.mods)
+allcomb.mods <- c("1", "LN", combn(uni.mods, 3, FUN = paste, collapse = ' + '))
+models.df <- data.frame(ID = 1:length(allcomb.mods), Model = allcomb.mods)
 
-
-#Create Model List
-EWT.capmort.models=function()
-{ 
-  #Time Models
-  S.dot = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ 1, link="loglog")))
-  S.LN = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ LN, link="loglog")))
-  S.time = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Time, link="loglog")))
-  S.time2 = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Time + I(Time^2), link="loglog")))
-  
-  #Capture and Handling Models
-  S.turkage = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ TurkAge * LN, link="loglog")))
-  S.sex = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Sex * LN, link="loglog")))
-  S.transtype = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Trans.Type * LN, link="loglog")))
-  S.TTSex = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ SexTT * LN, link="loglog")))
-  S.studyarea = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Study.Area * LN, link="loglog")))
-  S.Location = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Location * LN, link="loglog"))) #This will likely be explained better by weather covariates
-  S.LPDV = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ LPDV * LN, link="loglog")))
-  S.MG = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ MG * LN, link="loglog")))
-  S.REV = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ REV * LN, link="loglog")))
-  S.Hematoma = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Hematoma * LN, link="loglog")))
-  S.DayYear = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ YearDay * LN, link="loglog")))
-  S.HandlingTime = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ HandTime * LN, link="loglog")))
-  S.BodyCondition = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ BodyCon * LN, link="loglog")))
-  S.OrdDay = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ YearDay * LN, link="loglog")))
-  
-  #Weather Models
-  S.mt.CapDate = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ mtCDy * LN, link="loglog")))
-  S.avgmt.Week = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ avgmtWk * LN, link="loglog")))
-  S.prec.CapDate = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ pcpCDy * LN, link="loglog")))
-  S.avgprec.Week = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ avgpcpWk * LN, link="loglog")))
+setwd("./Outputs/")
+run.all.combo <- function(){
+  lapply(1:nrow(models.df), FUN = function(x){
+    assign(paste("S.Model", x),
+           mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =paste0("~ ", models.df$Model[x]), link="loglog"))))
+  })
   
   return(collect.models() )
 }
 
-EWT.capmort.results = EWT.capmort.models()
-EWT.capmort.results
+apriori.results <- run.all.combo()
+apriori.results
 
+setwd("./../")
 write.csv(EWT.capmort.results$model.table, file = "EWT.capmort.results.csv", row.names=FALSE)
 
 #Save Individual Model Outputs
