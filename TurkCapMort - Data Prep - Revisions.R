@@ -277,9 +277,10 @@ group.cov <- group.cov1 %>%
   group_by(Location, DateTime) %>%
   dplyr::summarize(Total = n()) %>%
   mutate(Group = ifelse(Total > 1, 1, 0)) %>%
-  merge(test, ., by = c("Location", "DateTime")) %>%
+  merge(group.cov1, ., by = c("Location", "DateTime")) %>%
   mutate(Group = ifelse(Censor == 1, NA, Group)) %>%
-  select(Bird.ID, Group)
+  select(Bird.ID, Group) %>%
+  mutate(Group = ifelse(is.na(Group), 2, Group))
 
 EWT.EH.cov3 <- merge(EWT.EH.cov2, group.cov, by = "Bird.ID", all.x = T)
 
