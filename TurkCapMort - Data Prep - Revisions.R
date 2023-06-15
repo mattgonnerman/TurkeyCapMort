@@ -112,10 +112,12 @@ require(chron)
 
 trap.cov <- trap.raw %>%
   filter(!is.na(TransFreq)) %>%
-  dplyr::select(Bird.ID = AlumBand, YearDay = Date, Study.Area, Location, Trans.Type, Sex, TurkAge = Age, 
+  dplyr::select(Bird.ID = AlumBand, Date = Date, Study.Area, Location, Trans.Type, Sex, TurkAge = Age, 
                 Weight = Weight..lbs., Cap.Time = Time.Fired, Release.Time = Release.Time, Hematoma, Pat.Tag = Pat.Tag) %>%
-  mutate(YearDay = as.POSIXlt(YearDay, format="%m/%d/%Y")) %>%
-  mutate(YearDay = YearDay$yday) %>% #Return the julian day of that year
+  mutate(Date = as.POSIXlt(Date, format="%m/%d/%Y")) %>%
+  mutate(BefFeb19 = ifelse(as.Date(Date) > as.Date("2019-02-01"), 0, 1),
+         BefMar19 = ifelse(as.Date(Date) > as.Date("2019-03-01"), 0, 1)) %>%
+  mutate(YearDay = Date$yday) %>% #Return the julian day of that year
   mutate(YearDay = ifelse(YearDay > 200, 1, YearDay)) %>% #If caught in decemberm change Julday to 1 to avoid issues
   mutate(Cap.Time = as.POSIXct(Cap.Time, format = "%H:%M")) %>%
   mutate(Release.Time = as.POSIXct(Release.Time, format = "%H:%M")) %>%
@@ -341,3 +343,6 @@ EWT.EH.covFinal <- EWT.EH.cov5 %>% #Slightly reduced sample size to include body
                                          ifelse(Sex == "M" & Trans.Type == "Neck", "M.N", "M.B")))))
 
 write.csv(EWT.EH.covFinal, file = "TurkCapMort_EH.csv", row.names=FALSE)
+
+
+EWT.EH.covFinal <- read.csv(file = "TurkCapMort_EH.csv")
