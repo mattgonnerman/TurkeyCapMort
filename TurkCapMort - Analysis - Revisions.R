@@ -8,18 +8,22 @@ return(hold[,1])}
 #############################################################################################
 ### A Priori Models
 tcm.data.raw <- read.csv(file = "TurkCapMort_EH.csv") %>%
+  mutate(Adult = ifelse(TurkAge == "A", 1, 0),
+         Male = ifelse(Sex == "M", 1, 0),
+         Backpack = ifelse(Trans.Type == "Back", 1, 0),
+         Group = ifelse(Group == 2, NA, Group)) %>%
   mutate_at(c('Study.Area'), .funs = function(x){ gsub(" ", "", x)}) %>%
-  mutate_at(c('Study.Area', 'Location', 'Sex', 'SexTT', 'TurkAge', 'Trans.Type',
-              'Hematoma', 'Year', 'SampType', 'MG', 'LPDV', 'REV', 'Group'), as.factor) %>%
-  select(-Location, -SexTT, -Pat.Tag, -Weight) %>%
-  mutate_at(c('YearDay', 'HandTime', 'Prcp.Day', 'Prcp.Week',
-              'Tavg.Day', 'Tavg.Week', 'BodyCon'), scale.fix)
+  mutate_at(c('Study.Area', 'Year', 'SampType'), as.factor) %>%
+  mutate_at(c('YearDay', 'Backpack', 'Adult', 'Male', 'Hematoma', 'HandTime',
+              'MG', 'LPDV', 'REV', 'Prcp.Day', 'Prcp.Week','Tavg.Day', 'Tavg.Week',
+              'BodyCon', 'Group', 'BefFeb19', 'BefMar19'), scale.fix) %>%
+  mutate(Group = ifelse(is.na(Group), 0, Group)) %>%
+  select(-Location, -SexTT, -Pat.Tag, -Weight, -Sex, -TurkAge, -Trans.Type) 
   
 
 ### Prepare for RMark
 capmort.process = process.data(tcm.data.raw,model="Nest",nocc=30,
-                               groups=c('Study.Area', 'Sex', 'TurkAge', 'Trans.Type',
-                                        'Hematoma', 'Year', 'SampType', 'MG', 'LPDV', 'REV', 'Group'))
+                               groups=c('Study.Area', 'Year', 'SampType'))
 capmort.ddl = make.design.data(capmort.process)
 
 ###Log-transform of date effect###
@@ -31,7 +35,34 @@ Daypost$LN<-log(Daypost$time)
 ## Add LN date data to design data
 capmort.ddl$S=merge_design.covariates(capmort.ddl$S,Daypost,bygroup=FALSE, bytime=TRUE)
 
-#Generate List of Models to run
+### UNIVARIATE MODEL SET WITH INTERCTION TERM
+setwd("./Outputs/")
+cov.names <- colnames(tcm.data.raw[,7:(ncol(tcm.data.raw)-2)])
+uni.mods <- c("1", "LN", paste0("LN * ", cov.names))
+
+run.uni <- function(){
+  for(x in 1:length(uni.mods)){
+    assign(paste0("S.Model", x),
+           list(formula = as.formula(paste0("~ ", uni.mods[x]))))
+  }
+  
+  capmort.model.list = create.model.list("Nest")
+  
+  capmort.results = mark.wrapper(capmort.model.list, data = capmort.process, ddl = capmort.ddl,
+                                 output=FALSE,  invisible = TRUE)
+  
+  # Return model table and list of models
+  return(capmort.results)
+}
+
+uni.results <- run.uni()
+uni.results
+
+setwd("./../")
+uni.int.aic <- uni.results$model.table
+write.csv(uni.int.aic, file = "CapMort - Univariate w Interaction AIC.csv", row.names=FALSE)
+
+### RUN ALL COMBOS SET WITHOUT INTERACTION TERM
 cov.names <- colnames(tcm.data.raw[,7:(ncol(tcm.data.raw)-2)])
 allcomb.1.mods <- c("1", "LN", paste0("LN + ", cov.names))
 allcomb.2.mods <- paste0("LN + ", combn(cov.names, 2, FUN = paste, collapse = ' + '))

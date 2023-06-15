@@ -3,7 +3,7 @@ lapply(c("dplyr", "RMark", "plyr", "janitor", "chron", "ggplot2", "patchwork"), 
 
 
 ### Load AIC results
-uni.aic <- read.csv("CapMort - UNIAIC.csv")
+uni.aic <- read.csv("CapMort - Univariate w Interaction AIC.csv")
 all.aic <- read.csv("CapMort - AllComboAIC.csv")
 threshold.aic <- read.csv("EWT.capmort.threshold.results.csv")
 # Generate List of Covariates
