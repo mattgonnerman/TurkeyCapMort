@@ -60,7 +60,7 @@ top.for.cov <- all.aic[sapply(supported.covs, FUN = function(x){min(which(grepl(
 all.aic$S
 
 cov.model <- sapply(gsub(" \\* LN", "", uni.mods), FUN = function(x){
-  ifelse(grepl(x, all.aic$S), 1, 0)
+  ifelse(grepl(x, ifelse(grepl("YearDay", all.aic$S), "YDay", all.aic$S)), 1, 0)
 })
 
 aic.weights.by.cov <- cbind(cov.model, all.aic) %>%

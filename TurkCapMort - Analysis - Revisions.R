@@ -18,7 +18,8 @@ tcm.data.raw <- read.csv(file = "TurkCapMort_EH.csv") %>%
               'MG', 'LPDV', 'REV', 'Prcp.Day', 'Prcp.Week','Tavg.Day', 'Tavg.Week',
               'BodyCon', 'Group', 'BefFeb19', 'BefMar19'), scale.fix) %>%
   mutate(Group = ifelse(is.na(Group), 0, Group)) %>%
-  select(-Location, -SexTT, -Pat.Tag, -Weight, -Sex, -TurkAge, -Trans.Type) 
+  select(-Location, -SexTT, -Pat.Tag, -Weight, -Sex, -TurkAge, -Trans.Type) %>% 
+  relocate(c(Year, BefFeb19, BefMar19), .after = last_col())
   
 
 ### Prepare for RMark
@@ -35,10 +36,14 @@ Daypost$LN<-log(Daypost$time)
 ## Add LN date data to design data
 capmort.ddl$S=merge_design.covariates(capmort.ddl$S,Daypost,bygroup=FALSE, bytime=TRUE)
 
+#####################################################################################################################################
 ### UNIVARIATE MODEL SET WITH INTERCTION TERM
 setwd("./Outputs/")
-cov.names <- colnames(tcm.data.raw[,7:(ncol(tcm.data.raw)-2)])
-uni.mods <- c("1", "LN", paste0("LN * ", cov.names))
+cov.names <- colnames(tcm.data.raw[,7:(ncol(tcm.data.raw)-3)])
+uni.mods <- c("1", "LN", 
+              cov.names,
+              paste0("LN * ", cov.names), 
+              paste0("LN + ", cov.names))
 
 run.uni <- function(){
   for(x in 1:length(uni.mods)){
@@ -62,19 +67,18 @@ setwd("./../")
 uni.int.aic <- uni.results$model.table
 write.csv(uni.int.aic, file = "CapMort - Univariate w Interaction AIC.csv", row.names=FALSE)
 
+#####################################################################################################################################
 ### RUN ALL COMBOS SET WITHOUT INTERACTION TERM
-cov.names <- colnames(tcm.data.raw[,7:(ncol(tcm.data.raw)-2)])
 allcomb.1.mods <- c("1", "LN", paste0("LN + ", cov.names))
 allcomb.2.mods <- paste0("LN + ", combn(cov.names, 2, FUN = paste, collapse = ' + '))
 allcomb.3.mods <- paste0("LN + ", combn(cov.names, 3, FUN = paste, collapse = ' + '))
 allcomb.mods <- c(allcomb.1.mods, allcomb.2.mods, allcomb.3.mods)
-models.df <- data.frame(ID = 1:length(allcomb.mods), Model = allcomb.mods)
 
 setwd("./Outputs/")
 run.all.combo <- function(){
-  for(x in 1:nrow(models.df)){
+  for(x in 1:length(allcomb.mods)){
     assign(paste0("S.Model", x),
-           list(formula = as.formula(paste0("~ ", models.df$Model[x]))))
+           list(formula = as.formula(paste0("~ ", allcomb.mods[x]))))
   }
   
   capmort.model.list = create.model.list("Nest")
@@ -92,57 +96,6 @@ apriori.results
 setwd("./../")
 all.aic <- apriori.results$model.table
 write.csv(all.aic, file = "CapMort - AllComboAIC.csv", row.names=FALSE)
-
-uni.aic <- as.data.frame(all.aic) %>%
-  filter(str_count(S, "\\+") < 2) %>% arrange(AICc) %>%
-  mutate(DeltaAICc = AICc - first(AICc)) %>% 
-  select(model, npar, AICc, DeltaAICc, Deviance) %>%
-  mutate(Weight = exp(-0.5*DeltaAICc)) %>%
-  mutate(Weight = Weight/sum(Weight)) 
-
-write.csv(uni.aic, file = "CapMort - UNIAIC.csv", row.names=FALSE)
-  
-
-#####################################################################################################################################
-### Ad Hoc Models
-
-## TIME PERIOD MODELS
-setwd("./Outputs/")
-S.Year = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Year * LN, link="loglog")))
-S.Feb19 = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ BefFeb19 * LN, link="loglog")))
-S.Mar19 = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ BefMar19 * LN, link="loglog")))
-setwd("./../")
-
-S.Year$results$beta
-
-## TRANSMITTER TYPE vs SEX
-tcm.data.Fonly <- tcm.data.raw %>% filter(Sex == "F")
-tcm.data.Neckonly <- tcm.data.raw %>% filter(Trans.Type == "Neck")
-capmort.process.Fonly = process.data(tcm.data.Fonly, model="Nest",nocc=30,
-                               groups=c("Sex", "Trans.Type"))
-capmort.process.Neckonly = process.data(tcm.data.Neckonly, model="Nest",nocc=30,
-                                     groups=c("Sex", "Trans.Type"))
-capmort.ddl.Fonly = make.design.data(capmort.process.Fonly)
-capmort.ddl.Neckonly = make.design.data(capmort.process.Neckonly)
-capmort.ddl.Fonly$S=merge_design.covariates(capmort.ddl.Fonly$S,Daypost,bygroup=FALSE, bytime=TRUE)
-capmort.ddl.Neckonly$S=merge_design.covariates(capmort.ddl.Neckonly$S,Daypost,bygroup=FALSE, bytime=TRUE)
-setwd("./Outputs/")
-S.TT.FOnly = mark(capmort.process.Fonly, capmort.ddl.Fonly, model.parameters=list(S=list(formula =~ Trans.Type * LN, link="loglog")))
-S.Sex.NeckOnly = mark(capmort.process.Neckonly, capmort.ddl.Neckonly, model.parameters=list(S=list(formula =~ Sex * LN, link="loglog")))
-setwd("./../")
-
-## HANDLING TIME vs GROUP/SOLO
-tcm.data.Group <- tcm.data.raw %>% filter(Group == 1)
-tcm.data.Solo <- tcm.data.raw %>% filter(Group == 0)
-capmort.process.Group = process.data(tcm.data.Group, model="Nest",nocc=30)
-capmort.process.Solo = process.data(tcm.raw.Solo, model="Nest",nocc=30)
-capmort.ddl.Group = make.design.data(capmort.process.Group)
-capmort.ddl.Solo = make.design.data(capmort.process.Solo)
-capmort.ddl.Group$S=merge_design.covariates(capmort.ddl.Group$S,Daypost,bygroup=FALSE, bytime=TRUE)
-capmort.ddl.Solo$S=merge_design.covariates(capmort.ddl.Solo$S,Daypost,bygroup=FALSE, bytime=TRUE)
-
-S.HandTime.Group = mark(capmort.process.Group, capmort.ddl.Group, model.parameters=list(S=list(formula =~ HandTime * LN, link="loglog")))
-S.HandTimeSolo = mark(capmort.process.Solo, capmort.ddl.Solo, model.parameters=list(S=list(formula =~ HandTime * LN, link="loglog")))
 
 #####################################################################################################################################
 ###Identify threshold date for capture mortality
@@ -173,6 +126,49 @@ EWT.capmort.threshold.models=function(){
 EWT.capmort.threshold.models()
 EWT.capmort.threshold.results <- collect.models()
 setwd("./../")
-
-
 write.csv(EWT.capmort.threshold.results$model.table, file = "ThresholdAIC.csv", row.names=FALSE)
+
+
+#####################################################################################################################################
+### Ad Hoc Models
+
+## TIME PERIOD MODELS
+setwd("./Outputs/")
+S.Year = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ Year + LN, link="loglog")))
+S.Feb19 = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ BefFeb19 + LN, link="loglog")))
+S.Mar19 = mark(capmort.process, capmort.ddl, model.parameters=list(S=list(formula =~ BefMar19 + LN, link="loglog")))
+setwd("./../")
+
+data.frame(Model = c("Year", "Feb19", "Mar19"),
+           AIC = c(S.Year$results$AICc,S.Feb19$results$AICc,S.Mar19$results$AICc)) %>%
+  arrange(AIC)
+
+## TRANSMITTER TYPE vs SEX
+tcm.data.Fonly <- tcm.data.raw %>% filter(Male == min(Male))
+tcm.data.Neckonly <- tcm.data.raw %>% filter(Backpack == min(Backpack))
+capmort.process.Fonly = process.data(tcm.data.Fonly, model="Nest",nocc=30)
+capmort.process.Neckonly = process.data(tcm.data.Neckonly, model="Nest",nocc=30)
+capmort.ddl.Fonly = make.design.data(capmort.process.Fonly)
+capmort.ddl.Neckonly = make.design.data(capmort.process.Neckonly)
+capmort.ddl.Fonly$S=merge_design.covariates(capmort.ddl.Fonly$S,Daypost,bygroup=FALSE, bytime=TRUE)
+capmort.ddl.Neckonly$S=merge_design.covariates(capmort.ddl.Neckonly$S,Daypost,bygroup=FALSE, bytime=TRUE)
+
+setwd("./Outputs/")
+S.TT.FOnly = mark(capmort.process.Fonly, capmort.ddl.Fonly, model.parameters=list(S=list(formula =~ Backpack + LN, link="loglog")))
+S.Sex.NeckOnly = mark(capmort.process.Neckonly, capmort.ddl.Neckonly, model.parameters=list(S=list(formula =~ Male + LN, link="loglog")))
+setwd("./../")
+
+## HANDLING TIME vs GROUP/SOLO
+tcm.data.Group <- tcm.data.raw %>% filter(Group == max(Group))
+tcm.data.Solo <- tcm.data.raw %>% filter(Group == min(Group))
+capmort.process.Group = process.data(tcm.data.Group, model="Nest",nocc=30)
+capmort.process.Solo = process.data(tcm.data.Solo, model="Nest",nocc=30)
+capmort.ddl.Group = make.design.data(capmort.process.Group)
+capmort.ddl.Solo = make.design.data(capmort.process.Solo)
+capmort.ddl.Group$S=merge_design.covariates(capmort.ddl.Group$S,Daypost,bygroup=FALSE, bytime=TRUE)
+capmort.ddl.Solo$S=merge_design.covariates(capmort.ddl.Solo$S,Daypost,bygroup=FALSE, bytime=TRUE)
+
+setwd("./Outputs/")
+S.HandTime.Group = mark(capmort.process.Group, capmort.ddl.Group, model.parameters=list(S=list(formula =~ HandTime + LN, link="loglog")))
+S.HandTimeSolo = mark(capmort.process.Solo, capmort.ddl.Solo, model.parameters=list(S=list(formula =~ HandTime + LN, link="loglog")))
+setwd("./../")
