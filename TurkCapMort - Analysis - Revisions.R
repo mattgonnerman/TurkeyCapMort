@@ -126,7 +126,9 @@ EWT.capmort.threshold.models=function(){
 EWT.capmort.threshold.models()
 EWT.capmort.threshold.results <- collect.models()
 setwd("./../")
-write.csv(EWT.capmort.threshold.results$model.table, file = "ThresholdAIC.csv", row.names=FALSE)
+
+threshold.aic <- EWT.capmort.threshold.results$model.table
+write.csv(threshold.aic, file = "ThresholdAIC.csv", row.names=FALSE)
 
 
 #####################################################################################################################################

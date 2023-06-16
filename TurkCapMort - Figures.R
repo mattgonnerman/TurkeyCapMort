@@ -478,7 +478,8 @@ year.est.20 <- year.survivals %>%
   mutate(CumProd = ifelse(DaysPostCap == 1, estimate, estimate*dplyr::lag(cumprod(estimate))),
          CumProdLCL = ifelse(DaysPostCap == 1, lcl, lcl*dplyr::lag(cumprod(lcl))),
          CumProdUCL = ifelse(DaysPostCap == 1, ucl, ucl*dplyr::lag(cumprod(ucl))))
-year.est <- rbind(year.est.18, year.est.19, year.est.20)
+year.est <- rbind(year.est.18, year.est.19, year.est.20) %>%
+  arrange(Year, DaysPostCap)
 
 year.plot.daily <- ggplot(data = year.est, aes(x = DaysPostCap, y=estimate, group = Year)) +
   geom_ribbon(aes(ymin = lcl, ymax = ucl, fill = Year), alpha = .3) +
